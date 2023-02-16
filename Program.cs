@@ -7,55 +7,35 @@ namespace gpt
     {
         static async Task Main(string[] args)
         {
-                       
             var services = new ServiceCollection();
             new Startup().ConfigureServices(services);
 
             var serviceProvider = services.BuildServiceProvider();
             
             
-            if (args.Length <= 0){
-                Console.ForegroundColor = ConsoleColor.Red;
-                System.Console.WriteLine("Stell ne Frage du Lappn");
-                Console.ResetColor();
+            if (args.Length <= 0) {
+                UiHelper.WriteLine(EColors.Red, "Stell ne Frage du Lappn;");
                 return;
             }
-
             
             var prompt =  args[0] + ". please put the command after the last line";
             var request = serviceProvider.GetRequiredService<IOpenAiRequest>();
+
             string responseString = await request.SendRequest(prompt);
 
             try
             {
-                var dyData = JsonConvert.DeserializeObject<dynamic>(responseString);
-                string guess = GuessCommand(dyData!.choices[0].text);
+                var rootData = JsonConvert.DeserializeObject<Root>(responseString);
+                
+                string guess = GuessHelper.GuessCommand(rootData.choices.First().text);
 
                 TextCopy.ClipboardService.SetText(guess);
 
-                Console.ForegroundColor = ConsoleColor.Green;
-                System.Console.WriteLine($"Copied to Clipboard: {guess}");
-                Console.ResetColor();
+                UiHelper.WriteLine(EColors.Green, $"Copied to Clipboard: {guess}");
             }
             catch(Exception e)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                System.Console.WriteLine($"===> Could not deserialize the JSON: {e.Message}");
-                Console.ResetColor();
-            }
-
-
-            // Scheiß async...
-            static string GuessCommand(string raw)
-            {
-                System.Console.WriteLine("===> OpenAi: ");
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                System.Console.WriteLine(raw);
-                Console.ResetColor();
-
-                return raw.Substring(
-                    raw.LastIndexOf('\n') + 1
-                    );
+                UiHelper.WriteLine(EColors.Red, $"===> Could not deserialize JSON: {e.Message}");
             }
         }
     }
